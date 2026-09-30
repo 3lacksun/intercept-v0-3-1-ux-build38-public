@@ -82,7 +82,9 @@ jobs:
         run: |
           set -euo pipefail
           python3 tools/fix_stream_and_bubbles.py | tee -a evidence/overlay.log
+          python3 tools/fix_stream_and_bubbles2.py | tee -a evidence/overlay.log
           grep -F 'stream-and-bubble overlay applied' evidence/overlay.log
+          grep -F 'stream-and-bubble overlay 2 applied' evidence/overlay.log
           grep -F 'status != MessageStatus.PENDING' src/app/src/main/java/com/nexarenew/aiconsole/domain/ChatMessageActionPolicy.kt
           grep -F 'INTER_BYTE_MS = 180_000L' src/app/src/main/java/com/nexarenew/aiconsole/domain/StreamIdlePolicy.kt
           grep -F 'fun textualContent' src/app/src/main/java/com/nexarenew/aiconsole/network/ProviderClient.kt
@@ -92,6 +94,10 @@ jobs:
           grep -F 'publishStreaming(force = true)' src/app/src/main/java/com/nexarenew/aiconsole/ui/AppViewModel.kt
           if grep -F 'actions available when complete' src/app/src/main/java/com/nexarenew/aiconsole/ui/screens/ChatScreen.kt; then
             echo bubble actions still locked until complete >&2
+            exit 1
+          fi
+          if grep -F 'Provider stream ended without [DONE]' src/app/src/main/java/com/nexarenew/aiconsole/network/ProviderClient.kt; then
+            echo incomplete streams still abort instead of continuing >&2
             exit 1
           fi
 

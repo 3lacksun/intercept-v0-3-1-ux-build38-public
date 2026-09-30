@@ -51,7 +51,7 @@ object ChatMessageActionPolicy {
     fun shouldContinue(
         kind: StreamTerminalKind,
         finishReason: String? = null,
-        outputTokens: Long? = None,
+        outputTokens: Long? = null,
         maxTokens: Int = 0,
     ): Boolean {
         if (kind == StreamTerminalKind.LENGTH || kind == StreamTerminalKind.INCOMPLETE) return true

@@ -11,11 +11,24 @@ def replace_once(path: Path, old: str, new: str) -> None:
     path.write_text(text.replace(old, new, 1))
 
 
+def write_if(path: Path, content: str) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(content)
+
+
 def main() -> None:
-    replace_once(
+    write_if(
         ROOT / "app/src/main/java/com/nexarenew/aiconsole/domain/ChatMessageActionPolicy.kt",
-        "        content.isNotBlank() && status in setOf(MessageStatus.COMPLETED, MessageStatus.FAILED, MessageStatus.CANCELLED)",
-        "        content.isNotBlank() && status != MessageStatus.PENDING",
+        """package com.nexarenew.aiconsole.domain
+
+import com.nexarenew.aiconsole.model.MessageStatus
+
+/** Stable availability policy for actions that operate on a message's final visible content. */
+object ChatMessageActionPolicy {
+    fun contentActionsAvailable(status: MessageStatus, content: String): Boolean =
+        content.isNotBlank() && status != MessageStatus.PENDING
+}
+""",
     )
     replace_once(
         ROOT / "app/src/main/java/com/nexarenew/aiconsole/domain/StreamIdlePolicy.kt",
@@ -24,21 +37,46 @@ def main() -> None:
     )
     replace_once(
         ROOT / "app/src/main/java/com/nexarenew/aiconsole/domain/StreamCompletionPolicy.kt",
-        '    fun continuationInstruction(): String =\n        "Continue exactly from where the previous response stopped. Do not repeat text already emitted. Finish the answer completely."\n}',
-        '    fun continuationInstruction(): String =\n        "Continue exactly from where the previous response stopped. Do not repeat text already emitted. Finish the answer completely."\n\n    fun isLengthLimit(finishReason: String?): Boolean {\n        val reason = finishReason?.lowercase().orEmpty()\n        return reason == "length" || reason == "max_tokens" || reason == "max_output_tokens"\n    }\n\n    fun shouldContinue(\n        kind: StreamTerminalKind,\n        finishReason: String? = null,\n        outputTokens: Long? = null,\n        maxTokens: Int = 0,\n    ): Boolean {\n        if (kind == StreamTerminalKind.LENGTH || kind == StreamTerminalKind.INCOMPLETE) return true\n        if (isLengthLimit(finishReason)) return true\n        return outputTokens != null && maxTokens > 0 && outputTokens >= maxTokens.toLong()\n    }\n}',
+        '''    fun continuationInstruction(): String =
+        "Continue exactly from where the previous response stopped. Do not repeat text already emitted. Finish the answer completely."
+}''',
+        '''    fun continuationInstruction(): String =
+        "Continue exactly from where the previous response stopped. Do not repeat text already emitted. Finish the answer completely."
+
+    fun isLengthLimit(finishReason: String?): Boolean {
+        val reason = finishReason?.lowercase().orEmpty()
+        return reason == "length" || reason == "max_tokens" || reason == "max_output_tokens"
+    }
+
+    fun shouldContinue(
+        kind: StreamTerminalKind,
+        finishReason: String? = null,
+        outputTokens: Long? = None,
+        maxTokens: Int = 0,
+    ): Boolean {
+        if (kind == StreamTerminalKind.LENGTH || kind == StreamTerminalKind.INCOMPLETE) return true
+        if (isLengthLimit(finishReason)) return true
+        return outputTokens != null && maxTokens > 0 && outputTokens >= maxTokens.toLong()
+    }
+}''',
     )
     test = ROOT / "app/src/test/java/com/nexarenew/aiconsole/domain/PureDomainTest.kt"
-    old_idle = "        assertFalse(StreamIdlePolicy.isStalled(44_999, receivedAnyBytes = true))\n        assertTrue(StreamIdlePolicy.isStalled(45_000, receivedAnyBytes = true))"
+    old_idle = (
+        "        assertFalse(StreamIdlePolicy.isStalled(44_999, receivedAnyBytes = true))\n"
+        "        assertTrue(StreamIdlePolicy.isStalled(45_000, receivedAnyBytes = true))"
+    )
     if test.exists() and old_idle in test.read_text():
         replace_once(
             test,
             old_idle,
-            "        assertFalse(StreamIdlePolicy.isStalled(179_999, receivedAnyBytes = true))\n        assertTrue(StreamIdlePolicy.isStalled(180_000, receivedAnyBytes = true))",
+            "        assertFalse(StreamIdlePolicy.isStalled(179_999, receivedAnyBytes = true))\n"
+            "        assertTrue(StreamIdlePolicy.isStalled(180_000, receivedAnyBytes = true))",
         )
     replace_once(
         ROOT / "app/src/main/java/com/nexarenew/aiconsole/network/ProviderClient.kt",
         "import com.nexarenew.aiconsole.domain.StreamTerminalKind",
-        "import com.nexarenew.aiconsole.domain.StreamContinuationPolicy\nimport com.nexarenew.aiconsole.domain.StreamTerminalKind",
+        "import com.nexarenew.aiconsole.domain.StreamContinuationPolicy\n"
+        "import com.nexarenew.aiconsole.domain.StreamTerminalKind",
     )
     replace_once(
         ROOT / "app/src/main/java/com/nexarenew/aiconsole/network/ProviderClient.kt",
@@ -47,19 +85,62 @@ def main() -> None:
     )
     replace_once(
         ROOT / "app/src/main/java/com/nexarenew/aiconsole/network/ProviderClient.kt",
-        '    private fun extractDelta(payload: String): String? = runCatching {\n        val delta = JSONObject(payload)\n            .optJSONArray("choices")\n            ?.optJSONObject(0)\n            ?.optJSONObject("delta") ?: return@runCatching null\n        if (!delta.has("content") || delta.isNull("content")) return@runCatching null\n        delta.optString("content").takeIf { it.isNotEmpty() && it != "null" }\n    }.getOrNull()',
-        '    private fun extractDelta(payload: String): String? = runCatching {\n        val choice = JSONObject(payload).optJSONArray("choices")?.optJSONObject(0) ?: return@runCatching null\n        textualContent(choice.optJSONObject("delta"))\n            ?: textualContent(choice.optJSONObject("message"))\n            ?: choice.optString("text").takeIf { it.isNotEmpty() && it != "null" }\n    }.getOrNull()\n\n    private fun textualContent(container: JSONObject?): String? {\n        if (container == null) return null\n        if (!container.has("content") || container.isNull("content")) {\n            return container.optString("text").takeIf { it.isNotEmpty() && it != "null" }\n        }\n        val raw = container.get("content")\n        return when (raw) {\n            is String -> raw.takeIf { it.isNotEmpty() && it != "null" }\n            is JSONArray -> buildString {\n                for (i in 0 until raw.length()) {\n                    val item = raw.opt(i)\n                    when (item) {\n                        is String -> if (item.isNotEmpty()) append(item)\n                        is JSONObject -> {\n                            val text = item.optString("text").ifBlank { item.optString("content") }\n                            if (text.isNotBlank() && text != "null") append(text)\n                        }\n                    }\n                }\n            }.takeIf { it.isNotEmpty() }\n            else -> raw.toString().takeIf { it.isNotEmpty() && it != "null" }\n        }\n    }',
+        '''    private fun extractDelta(payload: String): String? = runCatching {
+        val delta = JSONObject(payload)
+            .optJSONArray("choices")
+            ?.optJSONObject(0)
+            ?.optJSONObject("delta") ?: return@runCatching null
+        if (!delta.has("content") || delta.isNull("content")) return@runCatching null
+        delta.optString("content").takeIf { it.isNotEmpty() && it != "null" }
+    }.getOrNull()''',
+        '''    private fun extractDelta(payload: String): String? = runCatching {
+        val choice = JSONObject(payload).optJSONArray("choices")?.optJSONObject(0) ?: return@runCatching null
+        textualContent(choice.optJSONObject("delta"))
+            ?: textualContent(choice.optJSONObject("message"))
+            ?: choice.optString("text").takeIf { it.isNotEmpty() && it != "null" }
+    }.getOrNull()
+
+    private fun textualContent(container: JSONObject?): String? {
+        if (container == null) return null
+        if (!container.has("content") || container.isNull("content")) {
+            return container.optString("text").takeIf { it.isNotEmpty() && it != "null" }
+        }
+        val raw = container.get("content")
+        return when (raw) {
+            is String -> raw.takeIf { it.isNotEmpty() && it != "null" }
+            is JSONArray -> buildString {
+                for (i in 0 until raw.length()) {
+                    val item = raw.opt(i)
+                    when (item) {
+                        is String -> if (item.isNotEmpty()) append(item)
+                        is JSONObject -> {
+                            val text = item.optString("text").ifBlank { item.optString("content") }
+                            if (text.isNotBlank() && text != "null") append(text)
+                        }
+                    }
+                }
+            }.takeIf { it.isNotEmpty() }
+            else -> raw.toString().takeIf { it.isNotEmpty() && it != "null" }
+        }
+    }''',
     )
     replace_once(
         ROOT / "app/src/main/java/com/nexarenew/aiconsole/data/AppRepository.kt",
         "                if (result?.terminalKind == StreamTerminalKind.COMPLETE) return",
-        "                val shouldContinue = result == null || StreamContinuationPolicy.shouldContinue(\n                    result.terminalKind,\n                    result.finishReason,\n                    attemptUsage?.outputTokens,\n                    request.maxTokens,\n                )\n                if (!shouldContinue) return",
+        '''                val shouldContinue = result == null || StreamContinuationPolicy.shouldContinue(
+                    result.terminalKind,
+                    result.finishReason,
+                    attemptUsage?.outputTokens,
+                    request.maxTokens,
+                )
+                if (!shouldContinue) return''',
     )
     chat = ROOT / "app/src/main/java/com/nexarenew/aiconsole/ui/screens/ChatScreen.kt"
     replace_once(
         chat,
         "import androidx.compose.foundation.layout.*",
-        "import androidx.compose.foundation.layout.ExperimentalLayoutApi\nimport androidx.compose.foundation.layout.*",
+        "import androidx.compose.foundation.layout.ExperimentalLayoutApi\n"
+        "import androidx.compose.foundation.layout.*",
     )
     replace_once(
         chat,
@@ -73,13 +154,46 @@ def main() -> None:
     )
     replace_once(
         chat,
-        '                when {\n                    message.status == MessageStatus.STREAMING -> {\n                        Text(\n                            "Generating… actions available when complete.",\n                            style = MaterialTheme.typography.labelSmall,\n                            color = MaterialTheme.colorScheme.onSurfaceVariant,\n                            modifier = Modifier.padding(top = 8.dp).semantics { liveRegion = LiveRegionMode.Polite },\n                        )\n                    }\n                    actionsAvailable -> {\n                        Row(\n                            modifier = Modifier.fillMaxWidth().padding(top = 6.dp),\n                            horizontalArrangement = Arrangement.spacedBy(4.dp),\n                            verticalAlignment = Alignment.CenterVertically,\n                        ) {',
-        '                if (message.status == MessageStatus.STREAMING) {\n                    Text(\n                        "Generating…",\n                        style = MaterialTheme.typography.labelSmall,\n                        color = MaterialTheme.colorScheme.onSurfaceVariant,\n                        modifier = Modifier.padding(top = 8.dp).semantics { liveRegion = LiveRegionMode.Polite },\n                    )\n                }\n                when {\n                    actionsAvailable -> {\n                        FlowRow(\n                            modifier = Modifier.fillMaxWidth().padding(top = 6.dp),\n                            horizontalArrangement = Arrangement.spacedBy(4.dp),\n                            verticalArrangement = Arrangement.spacedBy(4.dp),\n                        ) {',
+        '''                when {
+                    message.status == MessageStatus.STREAMING -> {
+                        Text(
+                            "Generating… actions available when complete.",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(top = 8.dp).semantics { liveRegion = LiveRegionMode.Polite },
+                        )
+                    }
+                    actionsAvailable -> {
+                        Row(
+                            modifier = Modifier.fillMaxWidth().padding(top = 6.dp),
+                            horizontalArrangement = Arrangement.spacedBy(4.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {''',
+        '''                if (message.status == MessageStatus.STREAMING) {
+                    Text(
+                        "Generating…",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(top = 8.dp).semantics { liveRegion = LiveRegionMode.Polite },
+                    )
+                }
+                when {
+                    actionsAvailable -> {
+                        FlowRow(
+                            modifier = Modifier.fillMaxWidth().padding(top = 6.dp),
+                            horizontalArrangement = Arrangement.spacedBy(4.dp),
+                            verticalArrangement = Arrangement.spacedBy(4.dp),
+                        ) {''',
     )
     replace_once(
         chat,
-        '                                clipboard.setText(AnnotatedString(message.content))\n                                actionStatus = "Copied"\n                            }',
-        '                                clipboard.setText(AnnotatedString(message.content))\n                                actionStatus = "Copied"\n                                Toast.makeText(context, "Copied", Toast.LENGTH_SHORT).show()\n                            }',
+        '''                                clipboard.setText(AnnotatedString(message.content))
+                                actionStatus = "Copied"
+                            }''',
+        '''                                clipboard.setText(AnnotatedString(message.content))
+                                actionStatus = "Copied"
+                                Toast.makeText(context, "Copied", Toast.LENGTH_SHORT).show()
+                            }''',
     )
     print("stream-and-bubble overlay applied")
 

@@ -85,10 +85,12 @@ jobs:
           python3 tools/fix_stream_and_bubbles2.py | tee -a evidence/overlay.log
           python3 tools/fix_stream_and_bubbles3.py | tee -a evidence/overlay.log
           python3 tools/fix_stream_and_bubbles4.py | tee -a evidence/overlay.log
+          python3 tools/fix_stream_and_bubbles5.py | tee -a evidence/overlay.log
           grep -F 'stream-and-bubble overlay applied' evidence/overlay.log
           grep -F 'stream-and-bubble overlay 2 applied' evidence/overlay.log
           grep -F 'stream-and-bubble overlay 3 applied' evidence/overlay.log
           grep -F 'stream-and-bubble overlay 4 applied' evidence/overlay.log
+          grep -F 'stream-and-bubble overlay 5 applied' evidence/overlay.log
           grep -F 'status != MessageStatus.PENDING' src/app/src/main/java/com/nexarenew/aiconsole/domain/ChatMessageActionPolicy.kt
           grep -F 'INTER_BYTE_MS = 180_000L' src/app/src/main/java/com/nexarenew/aiconsole/domain/StreamIdlePolicy.kt
           grep -F 'fun textualContent' src/app/src/main/java/com/nexarenew/aiconsole/network/ProviderClient.kt
@@ -98,7 +100,15 @@ jobs:
           grep -F 'CLIPBOARD_SERVICE' src/app/src/main/java/com/nexarenew/aiconsole/ui/screens/ChatScreen.kt
           grep -F 'loadFullContent' src/app/src/main/java/com/nexarenew/aiconsole/ui/screens/ChatScreen.kt
           grep -F 'chat-sticky-actions' src/app/src/main/java/com/nexarenew/aiconsole/ui/screens/ChatScreen.kt
+          grep -F 'actionSheetOpen' src/app/src/main/java/com/nexarenew/aiconsole/ui/screens/ChatScreen.kt
+          grep -F 'sheet-speak' src/app/src/main/java/com/nexarenew/aiconsole/ui/screens/ChatScreen.kt
+          grep -F 'UI_CONTENT_CHARS = 120_000' src/app/src/main/java/com/nexarenew/aiconsole/data/AppRepository.kt
+          grep -F 'MAX_CONTINUATIONS = 24' src/app/src/main/java/com/nexarenew/aiconsole/domain/StreamCompletionPolicy.kt
           grep -F 'publishStreaming(force = true)' src/app/src/main/java/com/nexarenew/aiconsole/ui/AppViewModel.kt
+          if grep -F 'Truncated in chat view' src/app/src/main/java/com/nexarenew/aiconsole/data/AppRepository.kt; then
+            echo UI truncation banner still present >&2
+            exit 1
+          fi
           if grep -F 'actions available when complete' src/app/src/main/java/com/nexarenew/aiconsole/ui/screens/ChatScreen.kt; then
             echo bubble actions still locked until complete >&2
             exit 1

@@ -28,8 +28,17 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p src evidence
-          echo Downloading SHA-pinned textsrc pack
-          curl --fail --location --retry 5 --retry-delay 2 -o /tmp/textsrc.tgz "$TEXTSRC_URL"
+          if [ -f packs/textsrc-031-ux.tgz.b64 ]; then
+            echo Decoding vendored textsrc pack
+            base64 -d packs/textsrc-031-ux.tgz.b64 > /tmp/textsrc.tgz
+          elif ls packs/textsrc-031-ux.tgz.b64.* >/dev/null 2>&1; then
+            echo Decoding split vendored textsrc pack
+            cat packs/textsrc-031-ux.tgz.b64.* > /tmp/textsrc.tgz.b64
+            base64 -d /tmp/textsrc.tgz.b64 > /tmp/textsrc.tgz
+          else
+            echo Downloading SHA-pinned textsrc pack
+            curl --fail --location --retry 5 --retry-delay 2 -o /tmp/textsrc.tgz "$TEXTSRC_URL"
+          fi
           ACTUAL=$(sha256sum /tmp/textsrc.tgz | awk '{print $1}')
           echo "$ACTUAL" | tee evidence/textsrc.sha256
           test "$ACTUAL" = "$EXPECTED_TEXTSRC_SHA256"
@@ -68,6 +77,23 @@ jobs:
           test -f src/app/src/main/res/drawable/ic_intercept_foreground.xml
           grep -F 'painterResource(R.drawable.ic_intercept_foreground)' src/app/src/main/java/com/nexarenew/aiconsole/MainActivity.kt
           chmod +x src/gradlew
+
+      - name: Apply stream and bubble overlay
+        run: |
+          set -euo pipefail
+          python3 tools/fix_stream_and_bubbles.py | tee -a evidence/overlay.log
+          grep -F 'stream-and-bubble overlay applied' evidence/overlay.log
+          grep -F 'status != MessageStatus.PENDING' src/app/src/main/java/com/nexarenew/aiconsole/domain/ChatMessageActionPolicy.kt
+          grep -F 'INTER_BYTE_MS = 180_000L' src/app/src/main/java/com/nexarenew/aiconsole/domain/StreamIdlePolicy.kt
+          grep -F 'fun textualContent' src/app/src/main/java/com/nexarenew/aiconsole/network/ProviderClient.kt
+          grep -F 'StreamContinuationPolicy.shouldContinue' src/app/src/main/java/com/nexarenew/aiconsole/data/AppRepository.kt
+          grep -F 'FlowRow(' src/app/src/main/java/com/nexarenew/aiconsole/ui/screens/ChatScreen.kt
+          grep -F 'CLIPBOARD_SERVICE' src/app/src/main/java/com/nexarenew/aiconsole/ui/screens/ChatScreen.kt
+          grep -F 'publishStreaming(force = true)' src/app/src/main/java/com/nexarenew/aiconsole/ui/AppViewModel.kt
+          if grep -F 'actions available when complete' src/app/src/main/java/com/nexarenew/aiconsole/ui/screens/ChatScreen.kt; then
+            echo bubble actions still locked until complete >&2
+            exit 1
+          fi
 
       - uses: actions/setup-java@v4
         with:

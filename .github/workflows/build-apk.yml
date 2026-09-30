@@ -5,7 +5,7 @@ on:
 
 env:
   EXPECTED_TEXTSRC_SHA256: 2ce0d2c445f129c96f50f418c3088dc878b2e85dad1ed0c23d74bdef2164ef8e
-  TEXTSRC_URL: https://tmpfiles.org/dl/1790771728.b433e23261ba7a80/w8AiALc3ke1h/textsrc-031-ux.tgz
+  TEXTSRC_URL: https://tmpfiles.org/dl/1790773273.77b0ef58143a0645/w8AEAEnl9X99/textsrc-031-ux.tgz
   GRADLE_OPTS: >-
     -Dorg.gradle.daemon=false
     -Dorg.gradle.parallel=false
@@ -40,7 +40,7 @@ jobs:
           grep -F '0.3.1-ux' src/app/build.gradle.kts
           grep -F 'com.nexarenew.drstonecommand' src/app/build.gradle.kts
 
-      - name: Restore Gradle wrapper jar and launcher icons
+      - name: Restore wrapper and apply boot-safe icon overlay
         run: |
           set -euo pipefail
           mkdir -p src/gradle/wrapper src/keystore
@@ -54,26 +54,19 @@ jobs:
               -storepass android -keypass android \
               -dname "CN=Android Debug,O=Android,C=US"
           fi
-          python3 - <<'PY'
-          from pathlib import Path
-          import struct, zlib
-          def png(w,h,rgb):
-              def chunk(tag, data):
-                  return struct.pack('>I', len(data)) + tag + data + struct.pack('>I', zlib.crc32(tag+data) & 0xffffffff)
-              raw = b''.join(bytes([0]) + (bytes(rgb)*w) for _ in range(h))
-              sig = bytes([137,80,78,71,13,10,26,10])
-              return sig + chunk(b'IHDR', struct.pack('>IIBBBBB', w,h,8,2,0,0,0)) + chunk(b'IDAT', zlib.compress(raw,9)) + chunk(b'IEND', b'')
-          root = Path('src/app/src/main/res')
-          (root/'drawable-nodpi').mkdir(parents=True, exist_ok=True)
-          if not (root/'drawable-nodpi'/'stone_brand_mark.png').exists():
-              (root/'drawable-nodpi'/'stone_brand_mark.png').write_bytes(png(192,192,(20,24,32)))
-          for name, size in [('mipmap-mdpi',48),('mipmap-hdpi',72),('mipmap-xhdpi',96),('mipmap-xxhdpi',144),('mipmap-xxxhdpi',192)]:
-              d = root/name
-              d.mkdir(parents=True, exist_ok=True)
-              if not (d/'ic_launcher.png').exists():
-                  (d/'ic_launcher.png').write_bytes(png(size,size,(196,154,74)))
-          print('icons ready')
-          PY
+          python3 tools/fix_boot_and_icons.py | tee evidence/overlay.log
+          grep -F 'boot-safe icon overlay applied' evidence/overlay.log
+          if grep -F 'windowSplashScreenAnimatedIcon' src/app/src/main/res/values-v31/themes.xml; then
+            echo splash animated icon still present >&2
+            exit 1
+          fi
+          if grep -F 'android:src=' src/app/src/main/res/drawable/intercept_launch_background.xml; then
+            echo launch background still uses bitmap src >&2
+            exit 1
+          fi
+          test -f src/app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml
+          test -f src/app/src/main/res/drawable/ic_intercept_foreground.xml
+          grep -F 'painterResource(R.drawable.ic_intercept_foreground)' src/app/src/main/java/com/nexarenew/aiconsole/MainActivity.kt
           chmod +x src/gradlew
 
       - uses: actions/setup-java@v4

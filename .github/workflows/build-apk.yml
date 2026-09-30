@@ -87,12 +87,14 @@ jobs:
           python3 tools/fix_stream_and_bubbles4.py | tee -a evidence/overlay.log
           python3 tools/fix_stream_and_bubbles5.py | tee -a evidence/overlay.log
           python3 tools/fix_ux_upgrade.py | tee -a evidence/overlay.log
+          python3 tools/fix_ux_layout.py | tee -a evidence/overlay.log
           grep -F 'stream-and-bubble overlay applied' evidence/overlay.log
           grep -F 'stream-and-bubble overlay 2 applied' evidence/overlay.log
           grep -F 'stream-and-bubble overlay 3 applied' evidence/overlay.log
           grep -F 'stream-and-bubble overlay 4 applied' evidence/overlay.log
           grep -F 'stream-and-bubble overlay 5 applied' evidence/overlay.log
           grep -F 'ux-upgrade overlay applied' evidence/overlay.log
+          grep -F 'ux-layout overlay applied' evidence/overlay.log
           grep -F 'status != MessageStatus.PENDING' src/app/src/main/java/com/nexarenew/aiconsole/domain/ChatMessageActionPolicy.kt
           grep -F 'INTER_BYTE_MS = 180_000L' src/app/src/main/java/com/nexarenew/aiconsole/domain/StreamIdlePolicy.kt
           grep -F 'fun textualContent' src/app/src/main/java/com/nexarenew/aiconsole/network/ProviderClient.kt
@@ -108,8 +110,10 @@ jobs:
           grep -F 'MAX_CONTINUATIONS = 24' src/app/src/main/java/com/nexarenew/aiconsole/domain/StreamCompletionPolicy.kt
           grep -F 'InterceptDarkColors' src/app/src/main/java/com/nexarenew/aiconsole/ui/theme/InterceptTheme.kt
           grep -F 'full-reader' src/app/src/main/java/com/nexarenew/aiconsole/ui/screens/ChatScreen.kt
-          grep -F 'Tap this reply for Speak' src/app/src/main/java/com/nexarenew/aiconsole/ui/screens/ChatScreen.kt
           grep -F 'SelectionContainer' src/app/src/main/java/com/nexarenew/aiconsole/ui/screens/ChatScreen.kt
+          grep -F 'clipToBounds' src/app/src/main/java/com/nexarenew/aiconsole/ui/screens/ChatScreen.kt
+          grep -F 'bubble-open-actions' src/app/src/main/java/com/nexarenew/aiconsole/ui/screens/ChatScreen.kt
+          grep -F 'Selected reply' src/app/src/main/java/com/nexarenew/aiconsole/ui/screens/ChatScreen.kt
           grep -F 'publishStreaming(force = true)' src/app/src/main/java/com/nexarenew/aiconsole/ui/AppViewModel.kt
           if grep -F 'Truncated in chat view' src/app/src/main/java/com/nexarenew/aiconsole/data/AppRepository.kt; then
             echo UI truncation banner still present >&2

@@ -138,5 +138,5 @@ def main() -> None:
     print("stream-and-bubble overlay 5 applied")
 
 
-if __name__ == \"__main__\":
+if __name__ == "__main__":
     main()

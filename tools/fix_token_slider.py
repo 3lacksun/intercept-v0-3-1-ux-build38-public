@@ -9,6 +9,15 @@ VM = Path("src/app/src/main/java/com/nexarenew/aiconsole/ui/AppViewModel.kt")
 REPO = Path("src/app/src/main/java/com/nexarenew/aiconsole/data/AppRepository.kt")
 
 
+def must_replace_regex(path: Path, pattern: str, new: str) -> None:
+    import re
+    text = path.read_text()
+    updated, count = re.subn(pattern, new, text, count=1)
+    if count != 1:
+        raise SystemExit("regex not matched once in %s (%d)" % (path, count))
+    path.write_text(updated)
+
+
 def must_replace(path: Path, old: str, new: str) -> None:
     text = path.read_text()
     if old not in text:
@@ -72,7 +81,6 @@ def main() -> None:
         "            item.optString(\"modality\").trim().takeIf(String::isNotBlank)?.let { \"modality:$it\" },\n"
         "            publishedMaxOut?.let { \"maxout:$it\" },\n",
     )
-    # Insert parser before parseCatalogModel's return is not needed; add helper before parseCatalogModel.
     must_replace(
         CLIENT,
         "    private fun parseCatalogModel(provider: ProviderId, item: JSONObject): ParsedCatalogModel? {\n",
@@ -105,10 +113,9 @@ def main() -> None:
         "        mutableIntStateOf(com.nexarenew.aiconsole.domain.OutputTokenPolicy.normalize(chat?.maxTokens ?: 4096, outputCeiling))\n"
         "    }\n",
     )
-    must_replace(
+    must_replace_regex(
         SETTINGS,
-        "                            OutlinedTextField(maxTokensText,{maxTokensText=it.filter{ch->ch.isDigit()}},label={Text(\"Maximum output tokens • 256-step • ceiling 1,048,576\")},modifier=Modifier.fillMaxWidth())\n"
-        "                            Button(onClick={vm.updateChatControls(temperatureText.toDoubleOrNull()?:0.7,maxTokensText.toIntOrNull()?:4096);temperatureText=(vm.chat.value?.temperature?:0.7).toString();maxTokensText=(vm.chat.value?.maxTokens?:4096).toString()},enabled=chat!=null){Text(\"Save chat controls\")}\n",
+        r"                            OutlinedTextField\(maxTokensText,\{maxTokensText=it\.filter\{ch->ch\.isDigit\(\)\}\},label=\{Text\(\"Maximum output tokens[^\"]*\"\)\},modifier=Modifier\.fillMaxWidth\(\)\)\n                            Button\(onClick=\{vm\.updateChatControls\(temperatureText\.toDoubleOrNull\(\)\?:0\.7,maxTokensText\.toIntOrNull\(\)\?:4096\);temperatureText=\(vm\.chat\.value\?\.temperature\?:0\.7\)\.toString\(\);maxTokensText=\(vm\.chat\.value\?\.maxTokens\?:4096\)\.toString\(\)\},enabled=chat!=null\)\{Text\(\"Save chat controls\"\)\}\n",
         "                            Text(\"Maximum output tokens: $outputTokens\", style = MaterialTheme.typography.titleSmall)\n"
         "                            if (outputCeiling > com.nexarenew.aiconsole.domain.OutputTokenPolicy.MIN_TOKENS) {\n"
         "                                Slider(\n"

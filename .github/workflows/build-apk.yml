@@ -101,7 +101,7 @@ jobs:
           grep -F 'published max output' src/app/src/main/java/com/nexarenew/aiconsole/ui/screens/SettingsScreen.kt
           grep -F 'maxout:' src/app/src/main/java/com/nexarenew/aiconsole/network/ProviderClient.kt
           grep -F 'cappedOutputTokens' src/app/src/main/java/com/nexarenew/aiconsole/data/AppRepository.kt
-          if grep -F 'Maximum output tokens' src/app/src/main/java/com/nexarenew/aiconsole/ui/screens/SettingsScreen.kt; then
+          if grep -F 'maxTokensText' src/app/src/main/java/com/nexarenew/aiconsole/ui/screens/SettingsScreen.kt; then
             echo free max-token field still present >&2
             exit 1
           fi

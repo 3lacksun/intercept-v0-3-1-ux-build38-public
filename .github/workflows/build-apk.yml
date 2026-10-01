@@ -100,8 +100,8 @@ jobs:
           grep -F 'token-slider overlay applied' evidence/overlay.log
           grep -F 'token-limit overlay applied' evidence/overlay.log
           grep -F 'fun outputCeiling' src/app/src/main/java/com/nexarenew/aiconsole/domain/OutputTokenPolicy.kt
-          grep -F 'published max output' src/app/src/main/java/com/nexarenew/aiconsole/ui/screens/SettingsScreen.kt
           grep -F 'Published max output for this model' src/app/src/main/java/com/nexarenew/aiconsole/ui/screens/SettingsScreen.kt
+          grep -F 'Reading ' src/app/src/main/java/com/nexarenew/aiconsole/ui/screens/SettingsScreen.kt
           grep -F 'maxout:' src/app/src/main/java/com/nexarenew/aiconsole/network/ProviderClient.kt
           grep -F 'cappedOutputTokens' src/app/src/main/java/com/nexarenew/aiconsole/data/AppRepository.kt
           if grep -F 'maxTokensText' src/app/src/main/java/com/nexarenew/aiconsole/ui/screens/SettingsScreen.kt; then

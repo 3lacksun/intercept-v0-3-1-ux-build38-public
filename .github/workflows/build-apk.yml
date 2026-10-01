@@ -89,6 +89,7 @@ jobs:
           python3 tools/fix_ux_upgrade.py | tee -a evidence/overlay.log
           python3 tools/fix_ux_layout.py | tee -a evidence/overlay.log
           python3 tools/fix_token_slider.py | tee -a evidence/overlay.log
+          python3 tools/fix_token_limits.py | tee -a evidence/overlay.log
           grep -F 'stream-and-bubble overlay applied' evidence/overlay.log
           grep -F 'stream-and-bubble overlay 2 applied' evidence/overlay.log
           grep -F 'stream-and-bubble overlay 3 applied' evidence/overlay.log
@@ -97,8 +98,10 @@ jobs:
           grep -F 'ux-upgrade overlay applied' evidence/overlay.log
           grep -F 'ux-layout overlay applied' evidence/overlay.log
           grep -F 'token-slider overlay applied' evidence/overlay.log
+          grep -F 'token-limit overlay applied' evidence/overlay.log
           grep -F 'fun outputCeiling' src/app/src/main/java/com/nexarenew/aiconsole/domain/OutputTokenPolicy.kt
           grep -F 'published max output' src/app/src/main/java/com/nexarenew/aiconsole/ui/screens/SettingsScreen.kt
+          grep -F 'Published max output for this model' src/app/src/main/java/com/nexarenew/aiconsole/ui/screens/SettingsScreen.kt
           grep -F 'maxout:' src/app/src/main/java/com/nexarenew/aiconsole/network/ProviderClient.kt
           grep -F 'cappedOutputTokens' src/app/src/main/java/com/nexarenew/aiconsole/data/AppRepository.kt
           if grep -F 'maxTokensText' src/app/src/main/java/com/nexarenew/aiconsole/ui/screens/SettingsScreen.kt; then

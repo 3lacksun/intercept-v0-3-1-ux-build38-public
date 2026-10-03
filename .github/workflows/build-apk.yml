@@ -5,7 +5,7 @@ on:
 
 env:
   EXPECTED_TEXTSRC_SHA256: 2ce0d2c445f129c96f50f418c3088dc878b2e85dad1ed0c23d74bdef2164ef8e
-  TEXTSRC_URL: https://litter.catbox.moe/310adv.tgz
+  TEXTSRC_URL: https://d.uguu.se/ShJYhvNv.tgz
   GRADLE_OPTS: >-
     -Dorg.gradle.daemon=false
     -Dorg.gradle.parallel=false

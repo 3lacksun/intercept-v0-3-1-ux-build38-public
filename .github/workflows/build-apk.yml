@@ -94,6 +94,7 @@ jobs:
           python3 tools/fix_slider_native.py | tee -a evidence/overlay.log
           python3 tools/fix_app_token_limit.py | tee -a evidence/overlay.log
           python3 tools/fix_visual_upgrade.py | tee -a evidence/overlay.log
+          python3 tools/fix_token_entry.py | tee -a evidence/overlay.log
           grep -F 'stream-and-bubble overlay applied' evidence/overlay.log
           grep -F 'stream-and-bubble overlay 2 applied' evidence/overlay.log
           grep -F 'stream-and-bubble overlay 3 applied' evidence/overlay.log
@@ -107,6 +108,8 @@ jobs:
           grep -F 'slider-native overlay applied' evidence/overlay.log
           grep -F 'app-token-limit overlay applied' evidence/overlay.log
           grep -F 'visual-upgrade overlay applied' evidence/overlay.log
+          grep -F 'token-entry overlay applied' evidence/overlay.log
+          grep -F 'tokenEntry' src/app/src/main/java/com/nexarenew/aiconsole/ui/screens/SettingsScreen.kt
           grep -F '0xFFF6F1EA' src/app/src/main/java/com/nexarenew/aiconsole/ui/theme/InterceptTheme.kt
           grep -F 'fun outputCeiling' src/app/src/main/java/com/nexarenew/aiconsole/domain/OutputTokenPolicy.kt
           grep -F 'Published max output for this model' src/app/src/main/java/com/nexarenew/aiconsole/ui/screens/SettingsScreen.kt
